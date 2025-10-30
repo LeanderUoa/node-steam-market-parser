@@ -16,3 +16,7 @@ export function getInspectLinks(htmlString: string) : string[] {
         return links
     }
 }
+
+export function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}

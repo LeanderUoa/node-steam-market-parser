@@ -1,10 +1,12 @@
 import SteamMarketParser, { Currency } from "../src/index";
 import { getInspectLinks } from "../src/customUtils";   
+import * as dotenv from 'dotenv';
+dotenv.config();
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-console.log("Scraping data...");
+const smParser = new SteamMarketParser({appId: 730, currency: Currency.NZD, proxy: process.env.PROXY_URL || undefined});
 
 async function getData(listingName : string) {
-    const smParser = new SteamMarketParser({appId: 730, currency: Currency.NZD});
     const data = await smParser.getListing(listingName, {count: 10, start: 0});
     return data;
 
@@ -12,7 +14,7 @@ async function getData(listingName : string) {
 
 export async function scrape(listingName : string) : Promise<[number, string][]> {
     const data = await getData(listingName)
-        
+
     const prices: number[] = [];
     const inspectLinks: string[] = [];
 

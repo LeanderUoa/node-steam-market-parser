@@ -17,7 +17,7 @@ export class SteamMarketParser {
     country: 'US',
     language: 'english',
     currency: Currency.USD,
-    appId: 730
+    appId: 730,
   };
 
   public constructor(options?: SteamMarketParserOptions) {
