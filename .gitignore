@@ -12,3 +12,4 @@ npm-debug.log*
 
 .env
 links.csv
+fails_per_cycle.csv

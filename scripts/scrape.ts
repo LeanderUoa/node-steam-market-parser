@@ -7,7 +7,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const smParser = new SteamMarketParser({appId: 730, currency: Currency.NZD, proxy: process.env.PROXY_URL || undefined});
 
 async function getData(listingName : string) {
-    const data = await smParser.getListing(listingName, {count: 10, start: 0});
+    const data = await smParser.getListing(listingName, {count: 20, start: 0});
     return data;
 
 }
@@ -28,7 +28,6 @@ export async function scrape(listingName : string) : Promise<[number, string][]>
     });
 
     const mergedArray: [number, string][] = prices.map((price, index) => [price, inspectLinks[index]]);
-    console.log(mergedArray)
 
     return mergedArray;
 }

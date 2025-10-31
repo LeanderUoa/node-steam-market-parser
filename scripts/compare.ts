@@ -2,9 +2,11 @@ const fs = require('fs');
 const path = require('path');
 import { searchInfo } from './main';
 import { csgo } from './steamUser';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 const filePath = path.resolve(process.cwd(), 'links.csv');
-
-
+const ntfy_url = `https://ntfy.sh/` + (process.env.NTFY_TOPIC);
 
 export function compare(inspectLink : string, itemName : string, price : number){
 
@@ -25,7 +27,8 @@ export function compare(inspectLink : string, itemName : string, price : number)
             return false;
         }
         
-        csgo.inspectItem(inspectLink, (item : any) => {inspectCallback(inspectLink, item, itemName, price / 100)});        
+        csgo.inspectItem(inspectLink, (item : any) => {inspectCallback(inspectLink, item, itemName, price / 100)}); 
+             
         return true;
 
     } catch (err) {
@@ -36,10 +39,25 @@ export function compare(inspectLink : string, itemName : string, price : number)
 function inspectCallback(inspectLink : string, item: any, itemName : string, price: number) {
     const currentDateTime = new Date().toISOString();
     const output = `${inspectLink}, ${item.paintwear}, ${itemName}, ${price}, ${currentDateTime}\n`;
+    console.log(` ${itemName} FV:${item.paintwear} at price ${price}`, );  
     fs.appendFileSync(filePath, output, 'utf8');
 
     if (searchInfo[itemName].priceThreshold >= price && searchInfo[itemName].wearThreshold >= item.paintwear) {
+        const message = `Item: ${itemName}\nPrice: $${price}\nWear: ${item.paintwear}`;
         console.log(`Item ${itemName} meets the criteria: Price - ${price}, Paintwear - ${item.paintwear}`); 
+
+        fetch(ntfy_url, {
+            method: 'POST',
+            body: message,
+        });
+
+    } else if (searchInfo[itemName].wearThreshold >= item.paintwear && Number.isNaN(price)) {
+        const message = `Missed Item: ${itemName}\nPrice: N/A\nWear: ${item.paintwear}`;
+        console.log(message);
+        fetch(ntfy_url, {
+            method: 'POST',
+            body: message,
+        });
     }
 
 }

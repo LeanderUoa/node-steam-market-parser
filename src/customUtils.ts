@@ -20,3 +20,13 @@ export function getInspectLinks(htmlString: string) : string[] {
 export function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+export async function sleepWithProgress(ms: number): Promise<void> {
+    const totalSteps = ms / 100; // Assuming progress updates every 100ms
+    for (let i = 0; i < totalSteps; i++) {
+        await sleep(100);
+        const progress = Math.round(((i + 1) / totalSteps) * 100);
+        process.stdout.write(`\rWaiting: ${progress}%`);
+    }
+    console.log(); // Move to the next line after completion
+}
