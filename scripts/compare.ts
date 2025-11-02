@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+import { log } from 'console';
 import { searchInfo } from './main';
 import { csgo } from './steamUser';
 import * as dotenv from 'dotenv';
@@ -23,9 +24,16 @@ export function compare(inspectLink : string, itemName : string, price : number)
         const lines = data.split(/\r?\n/).map((s: string) => s.trim()).filter(Boolean);
         
         // Check first column (inspect link) of each CSV line
-        if (lines.some(line => line.split(',')[0].trim() === inspectLink)) {
+        const matchingLine = lines.find(line => line.split(',')[0].trim() === inspectLink);
+
+        if (matchingLine) {
+            const columns = matchingLine.split(',');
+            const secondColumn = parseFloat(columns[1]); // or keep as string if not numeric
+
+            compareAndNotify(itemName, price / 100, secondColumn);
             return false;
         }
+        
         
         csgo.inspectItem(inspectLink, (item : any) => {inspectCallback(inspectLink, item, itemName, price / 100)}); 
              
@@ -42,22 +50,26 @@ function inspectCallback(inspectLink : string, item: any, itemName : string, pri
     console.log(` ${itemName} FV:${item.paintwear} at price ${price}`, );  
     fs.appendFileSync(filePath, output, 'utf8');
 
-    if (searchInfo[itemName].priceThreshold >= price && searchInfo[itemName].wearThreshold >= item.paintwear) {
-        const message = `Item: ${itemName}\nPrice: $${price}\nWear: ${item.paintwear}`;
-        console.log(`Item ${itemName} meets the criteria: Price - ${price}, Paintwear - ${item.paintwear}`); 
+    compareAndNotify(itemName, price, item.paintwear);
+
+}
+
+function compareAndNotify(itemName: string, price: number, wear: number) {
+    if (searchInfo[itemName].priceThreshold >= price && searchInfo[itemName].wearThreshold >= wear) {
+        const message = `Item: ${itemName}\nPrice: $${price}\nWear: ${wear}`;
+        console.log(`Item ${itemName} meets the criteria: Price - ${price}, Paintwear - ${wear}`); 
 
         fetch(ntfy_url, {
             method: 'POST',
             body: message,
         });
 
-    } else if (searchInfo[itemName].wearThreshold >= item.paintwear && Number.isNaN(price)) {
-        const message = `Missed Item: ${itemName}\nPrice: N/A\nWear: ${item.paintwear}`;
+    } else if (searchInfo[itemName].wearThreshold >= wear && Number.isNaN(price)) {
+        const message = `Missed Item: ${itemName}\nPrice: N/A\nWear: ${wear}`;
         console.log(message);
         fetch(ntfy_url, {
             method: 'POST',
             body: message,
         });
     }
-
 }
