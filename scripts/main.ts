@@ -1,53 +1,45 @@
 import { scrape } from './scrape';
 import { compare } from './compare';
 import { initSteamThen, initCsgoThen } from "./steamUser";
-import { sleep, sleepWithProgress } from '../src/customUtils';
+import { sleep, sleepWithProgress, timeout } from '../src/customUtils';
 
 const fs = require('fs');
 const path = require('path');
 
 const fails_filepath = path.resolve(process.cwd(), 'fails_per_cycle.csv');
 
+let previous_price = 0;
 
 async function start() {
     await initSteamThen(() => {initCsgoThen(main)});
 }
 
-export const searchInfo: { [key: string]: { priceThreshold: number; wearThreshold: number, searchOffsets? : number } } = {
-    "Glock-18 | Snack Attack (Minimal Wear)": {
+export const searchInfo: { [key: string]: {searchOffsets? : number, info : { priceThreshold: number; wearThreshold: number}[]} } = {
+    "Glock-18 | Snack Attack (Minimal Wear)": {info: [{
         priceThreshold: 70,
         wearThreshold: 0.115
-    },
-    "MAC-10 | Toybox (Minimal Wear)": {
+    }]},
+    "MAC-10 | Toybox (Minimal Wear)": {info: [{
         priceThreshold: 70,
         wearThreshold: 0.115
-    },
+    }]},
     "UMP-45 | Neo-Noir (Minimal Wear)": {
-        priceThreshold: 39,
-        wearThreshold: 0.12
-    },
-    "UMP-45 | Neo-Noir (Minimal Wear) ": {
-        priceThreshold: 50,
-        wearThreshold: 0.105,
-        searchOffsets: 2
-    },
-    "G3SG1 | The Executioner (Field-Tested)": {
-        priceThreshold: 33,
-        wearThreshold: 0.22,
-        searchOffsets: 2
-    },
-    "P90 | Shapewood (Minimal Wear)": {
-        priceThreshold: 33,
-        wearThreshold: 0.11
-    },
-    "Sawed-Off | Wasteland Princess (Minimal Wear)": {
-        priceThreshold: 83,
+        searchOffsets: 2,
+        info: [{
+            priceThreshold: 51,
+            wearThreshold: 0.105,
+        }, {
+            priceThreshold: 43,
+            wearThreshold: 0.12
+        }]},
+    "Sawed-Off | Wasteland Princess (Minimal Wear)": {info: [{
+        priceThreshold: 89,
         wearThreshold: 0.097
-    },
-    "P90 | Shallow Grave (Minimal Wear)": {
-        priceThreshold: 83,
-        wearThreshold: 0.1
-    }
+    }]},
+    "P90 | Shallow Grave (Minimal Wear)": {info: [{
+        priceThreshold: 89,
+        wearThreshold: 0.105
+    }]}
 };
 
 // Main function to start the scraping process
@@ -55,47 +47,47 @@ export async function main() {
     while (true) {
         var count_errors = 0;
         for (const itemName in searchInfo) {
-
             count_errors += await checkItem(itemName.trim(), searchInfo[itemName].searchOffsets ?? 1);
-
-            await sleep(500);
-            
         }
         
         const output = `${count_errors / Object.keys(searchInfo).length}\n`;
         fs.appendFileSync(fails_filepath, output, 'utf8');
-        await sleepWithProgress(10);
+        await sleepWithProgress(100);
     }
 }
 
-async function checkItem(itemName : string, noOffsets : number) : Promise<number> {
+async function checkItem(itemName : string, noOffsets : number){
     let j = 0;
     let count_errors = 0;
-    while (j < (noOffsets)) {
+    previous_price = 0;
+    while (j < noOffsets) {
         try {
-            await scrape(itemName, j * 20).then(async results => {
-                for (let i = 0; i < results.length; i++) {
-                    
-                    const [price, link] = results[i];
-                    if (compare(link, itemName, price)) {
-                        await sleep(1000);                    
-                    } else {
-                        // console.log(`Duplicate link found, skipping: ${link}`);     
-                        continue               
+            await Promise.race([
+                (async () => {
+                    const results = await scrape(itemName, j * 20);
+                    for (let i = 0; i < results.length; i++) {
+                        const [price, link] = results[i];
+                        for (const info of searchInfo[itemName].info) {
+                            const goalPrice = info.priceThreshold;
+                            const goalFloat = info.wearThreshold;
+                            if (compare(link, itemName, price, goalPrice, goalFloat, previous_price)) {
+                                await sleep(300);
+                                previous_price = price;
+                            }
+                        }
                     }
-                }
-            });
-            j += 1;
-            
+                    j += 1;
+                })(),
+                timeout(10_000) // 10 seconds
+            ]);
         } catch (error) {
             console.error('Error occurred:', error);
             count_errors += 1;
-            await sleep(2000); // Wait between item checks to avoid rate limiting
-
-            continue
-
+            await sleep(700); // Wait to avoid rate limiting
+            continue;
         }
     }
+    
     return count_errors;
 }
 

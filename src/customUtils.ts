@@ -30,3 +30,11 @@ export async function sleepWithProgress(ms: number): Promise<void> {
     }
     console.log(); // Move to the next line after completion
 }
+
+export function timeout(ms: number, message = 'Operation timed out'): Promise<never> {
+    return new Promise((_, reject) => {
+        const error = new Error(`${message} (${ms}ms)`);
+        const timer = setTimeout(() => reject(error), ms);
+        
+    });
+}
