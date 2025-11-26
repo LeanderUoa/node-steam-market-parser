@@ -8,7 +8,8 @@ dotenv.config();
 
 const linksFilePath = path.resolve(process.cwd(), 'links.csv');
 const notifsFilePath = path.resolve(process.cwd(), 'notifs.csv');
-const ntfy_url = `https://ntfy.sh/` + (process.env.NTFY_TOPIC);
+const ntfyUrl = `https://ntfy.sh/` + (process.env.NTFY_TOPIC);
+const ntfyMissedUrl = `https://ntfy.sh/` + (process.env.NTFY_TOPIC_MISSED);
 
 export function compare(inspectLink : string, itemName : string, price : number, implementation : ComparisonImplementation, expectedPrice: number) : boolean {
     // console.log(`Comparing item ${itemName} with link ${inspectLink} at price ${price}...`);
@@ -67,16 +68,18 @@ export function compareAndNotify(itemName: string, price: number, wear: number, 
             return;
         }
         message = `Missed Item: ${itemName}\nWear: ${wear}\nEst. price: \$${expectedPrice != 0 ? expectedPrice : "N/A"} `;
+        notifyAndWrite(ntfyMissedUrl, itemName, price, wear, message);
+        return;
     } else {
         if (!implementation.compare(price, wear)) {
             return;
         }
     }
 
-    notifyAndWrite(itemName, price, wear, message);
+    notifyAndWrite(ntfyUrl, itemName, price, wear, message);
 }
 
-function notifyAndWrite(itemName: string, price: number, wear: number, message: string){
+function notifyAndWrite(httpUrl: string, itemName: string, price: number, wear: number, message: string){
     console.log(message);
 
     const data: string = fs.readFileSync(notifsFilePath, 'utf8');
@@ -87,7 +90,7 @@ function notifyAndWrite(itemName: string, price: number, wear: number, message: 
         const csvRow = `${itemName}, ${price}, ${wear}\n`;
         fs.appendFileSync(notifsFilePath, csvRow, 'utf8');
 
-        fetch(ntfy_url, {
+        fetch(httpUrl, {
             method: 'POST',
             body: message,
         });

@@ -44,37 +44,37 @@ function akPrice(wear: number) {
 const tests = [
     {
         label: "wear=0.10 price=160 → should notify (price < expected)",
-        wear: 0.10,
+        wear: 0.101,
         price: 160,                      // expected ~164.8
         should: "notify"
     },
     {
         label: "wear=0.10 price=180 → should NOT notify (price too high)",
-        wear: 0.10,
+        wear: 0.101,
         price: 180,                      // expected ~164.8
         should: "not"
     },
     {
         label: "wear=0.12 price=150 → should notify",
-        wear: 0.12,
+        wear: 0.121,
         price: 150,                      // expected ~155.6
         should: "notify"
     },
     {
         label: "wear=0.12 price=170 → should NOT notify",
-        wear: 0.12,
+        wear: 0.121,
         price: 170,
         should: "not"
     },
     {
         label: "wear borderline high 0.14 price=140 → should NOT notify (wear too high)",
-        wear: 0.14,
+        wear: 0.141,
         price: 140,
         should: "not"
     },
     {
         label: "good wear but NaN price → should notify fallback",
-        wear: 0.111,
+        wear: 0.1111,
         price: NaN,
         should: "notify"
     }
