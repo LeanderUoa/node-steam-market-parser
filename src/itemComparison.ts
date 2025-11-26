@@ -5,14 +5,20 @@ export abstract class ComparisonImplementation {
 export class FormulaImplementation extends ComparisonImplementation {
     formulaPoint1?: {price: number, wear: number}
     formulaPoint2?: {price: number, wear: number}
+    maxFloat?: number
 
-    constructor(formulaPoint1?: {price: number, wear: number}, formulaPoint2?: {price: number, wear: number}) {
+    constructor(formulaPoint1?: {price: number, wear: number}, formulaPoint2?: {price: number, wear: number}, maxFloat?: number) {
         super();
         this.formulaPoint1 = formulaPoint1;
         this.formulaPoint2 = formulaPoint2;
+        this.maxFloat = maxFloat;
     }
 
     compare(price: number, wear: number): boolean {
+        if (this.maxFloat && this.maxFloat < wear){
+            return false
+        }
+
         if (!this.formulaPoint1 || !this.formulaPoint2) {
             throw new Error("Formula points not defined");
         }
