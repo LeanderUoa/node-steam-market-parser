@@ -12,6 +12,7 @@ const ntfy_url = `https://ntfy.sh/` + (process.env.NTFY_TOPIC);
 export function compare(inspectLink : string, itemName : string, price : number, goalPrice: number, goalFloat: number, previous_price: number) : boolean {
     // console.log(`Comparing item ${itemName} with link ${inspectLink} at price ${price}...`);
     // console.log(`Goal Price: ${goalPrice}, Goal Float: ${goalFloat}`);
+    // console.log(`Previous Price: ${previous_price}`);
     try {
         
         if (!fs.existsSync(linksFilePath)) {
@@ -60,7 +61,7 @@ function compareAndNotify(itemName: string, price: number, wear: number, goalPri
         notifyAndWrite(itemName, price, wear, message);
 
     } else if (goalFloat >= wear && Number.isNaN(price) && previous_price <= goalPrice) {
-        const message = `Missed Item: ${itemName}\nPrice: N/A\nWear: ${wear}`;
+        const message = `Missed Item: ${itemName}\nWear: ${wear}\nEst. price: ${previous_price != 0 ? previous_price : "N/A"} `;
         notifyAndWrite(itemName, price, wear, message);
     }
 }

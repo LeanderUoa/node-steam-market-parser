@@ -5,7 +5,10 @@ dotenv.config();
 const readlineSync = require('readline-sync');
 const GlobalOffensive = require('globaloffensive');
 
+console.log(process.env.STEAM_PROXY_URL)
 export const client = new SteamUser();
+
+
 export var csgo = new GlobalOffensive(client);
 
 const details = {

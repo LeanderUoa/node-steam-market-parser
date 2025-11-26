@@ -14,3 +14,5 @@ npm-debug.log*
 links.csv
 fails_per_cycle.csv
 notifs.csv
+time_per_cycle.csv
+fails_per_cycle_old.csv

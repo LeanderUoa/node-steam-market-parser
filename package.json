@@ -66,6 +66,7 @@
     "node-fetch": "^3.3.2",
     "readline-sync": "^1.4.10",
     "socks-proxy-agent": "^8.0.1",
+    "stay-awake": "^0.0.3",
     "steam-user": "^5.2.3",
     "zlib": "^1.0.5"
   }
