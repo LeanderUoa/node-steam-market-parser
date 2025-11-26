@@ -16,6 +16,7 @@
     "scrape": "ts-node scripts/main.ts",
     "test_ntfy": "ts-node scripts/test_ntfy.ts",
     "test_steam": "node --trace-warnings -r ts-node/register scripts/test_steamuser.ts",
+    "test_comparison": "ts-node scripts/test_newItemComparison.ts",
     "build": "tsc",
     "test": "mocha -r ts-node/register tests/**/*.test.ts",
     "coverage": "nyc mocha -r ts-node/register tests/**/*.test.ts && nyc report --reporter=lcov",

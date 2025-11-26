@@ -55,25 +55,53 @@ async function checkSearchList() {
     console.log(`took ${duration.toFixed(2)} ms`);
 }
 
+function expectedPrice(results: [number, string][], index: number): number {
+    const n = results.length;
+
+    // --- Find nearest left valid price ---
+    let left: number | null = null;
+    for (let i = index - 1; i >= 0; i--) {
+        if (!Number.isNaN(results[i][0])) {
+            left = results[i][0];
+            break;
+        }
+    }
+
+    // --- Find nearest right valid price ---
+    let right: number | null = null;
+    for (let i = index + 1; i < n; i++) {
+        if (!Number.isNaN(results[i][0])) {
+            right = results[i][0];
+            break;
+        }
+    }
+
+    // --- Combine results ---
+    if (left !== null && right !== null) {
+        return (left + right) / 2; // interpolate
+    } else if (left !== null) {
+        return left; // only left neighbor available
+    } else if (right !== null) {
+        return right; // only right neighbor available
+    } else {
+        return NaN; // no valid neighbors
+    }
+}
+
 async function checkItem(itemName : string, noOffsets : number){
     let j = 0;
     let count_errors = 0;
-    let previous_price = 0;
     while (j < noOffsets) {
         try {
             await Promise.race([
                 (async () => {
                     const results = await scrape(itemName, j * 20);
+                    const implementation = searchInfo[itemName].implementation;
                     for (let i = 0; i < results.length; i++) {
                         const [price, link] = results[i];
-                        for (const info of searchInfo[itemName].info) {
-                            const goalPrice = info.priceThreshold;
-                            const goalFloat = info.wearThreshold;
-                            if (compare(link, itemName, price, goalPrice, goalFloat, previous_price / 100)) {
-                                await sleep(500);
-                                
-                            }
-                            previous_price = price;
+
+                        if (compare(link, itemName, price, implementation, expectedPrice(results, i) / 100)) {
+                            await sleep(500);
                         }
                     }
                     j += 1;

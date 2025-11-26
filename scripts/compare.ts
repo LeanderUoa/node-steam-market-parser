@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 import { log } from 'console';
 import { csgo } from './steamUser';
+import { ComparisonImplementation } from '../src/itemComparison';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -9,10 +10,10 @@ const linksFilePath = path.resolve(process.cwd(), 'links.csv');
 const notifsFilePath = path.resolve(process.cwd(), 'notifs.csv');
 const ntfy_url = `https://ntfy.sh/` + (process.env.NTFY_TOPIC);
 
-export function compare(inspectLink : string, itemName : string, price : number, goalPrice: number, goalFloat: number, previous_price: number) : boolean {
+export function compare(inspectLink : string, itemName : string, price : number, implementation : ComparisonImplementation, expectedPrice: number) : boolean {
     // console.log(`Comparing item ${itemName} with link ${inspectLink} at price ${price}...`);
     // console.log(`Goal Price: ${goalPrice}, Goal Float: ${goalFloat}`);
-    // console.log(`Previous Price: ${previous_price}`);
+
     try {
         
         if (!fs.existsSync(linksFilePath)) {
@@ -31,12 +32,12 @@ export function compare(inspectLink : string, itemName : string, price : number,
             const columns = matchingLine.split(',');
             const secondColumn = parseFloat(columns[1]); // or keep as string if not numeric
 
-            compareAndNotify(itemName, price / 100, secondColumn, goalPrice, goalFloat, previous_price);
+            compareAndNotify(itemName, price / 100, secondColumn, implementation, expectedPrice);
             return false;
         }
         
         
-        csgo.inspectItem(inspectLink, (item : any) => {inspectCallback(inspectLink, item, itemName, price / 100, goalPrice, goalFloat, previous_price);}); 
+        csgo.inspectItem(inspectLink, (item : any) => {inspectCallback(inspectLink, item, itemName, price / 100, implementation, expectedPrice);}); 
              
         return true;
 
@@ -45,25 +46,34 @@ export function compare(inspectLink : string, itemName : string, price : number,
     }
 }
 
-function inspectCallback(inspectLink : string, item: any, itemName : string, price: number, goalPrice: number, goalFloat: number, previous_price: number) {
+function inspectCallback(inspectLink : string, item: any, itemName : string, price: number, implementation : ComparisonImplementation, expectedPrice: number) {
     const currentDateTime = new Date().toISOString();
     const output = `${inspectLink}, ${item.paintwear}, ${itemName}, ${price}, ${currentDateTime}\n`;
-    console.log(` ${itemName} FV:${item.paintwear} at price ${price}`, );  
+    console.log(` ${itemName} FV:${item.paintwear} at price ${price}`, );
     fs.appendFileSync(linksFilePath, output, 'utf8');
 
-    compareAndNotify(itemName, price, item.paintwear, goalPrice, goalFloat, previous_price);
+    compareAndNotify(itemName, price, item.paintwear, implementation, expectedPrice);
 
 }
 
-function compareAndNotify(itemName: string, price: number, wear: number, goalPrice: number, goalFloat: number, previous_price: number) {
-    if (goalPrice >= price && goalFloat >= wear) {
-        const message = `New item: ${itemName}\nPrice: $${price}\nWear: ${wear}`;
-        notifyAndWrite(itemName, price, wear, message);
+export function compareAndNotify(itemName: string, price: number, wear: number, implementation : ComparisonImplementation, expectedPrice: number) { 
 
-    } else if (goalFloat >= wear && Number.isNaN(price) && previous_price <= goalPrice) {
-        const message = `Missed Item: ${itemName}\nWear: ${wear}\nEst. price: ${previous_price != 0 ? previous_price : "N/A"} `;
-        notifyAndWrite(itemName, price, wear, message);
+    let message = `New item: ${itemName}\nPrice: $${price}\nWear: ${wear}`;
+
+    if (Number.isNaN(price)) {
+        if (Number.isNaN(expectedPrice)){
+            console.log("no valid neighbours found...")
+        } else if (!implementation.compare(expectedPrice * 0.95, wear)) {
+            return;
+        }
+        message = `Missed Item: ${itemName}\nWear: ${wear}\nEst. price: \$${expectedPrice != 0 ? expectedPrice : "N/A"} `;
+    } else {
+        if (!implementation.compare(price, wear)) {
+            return;
+        }
     }
+
+    notifyAndWrite(itemName, price, wear, message);
 }
 
 function notifyAndWrite(itemName: string, price: number, wear: number, message: string){
