@@ -6,7 +6,10 @@ const readlineSync = require('readline-sync');
 const GlobalOffensive = require('globaloffensive');
 
 console.log(process.env.STEAM_PROXY_URL)
-export const client = new SteamUser();
+export const client = new SteamUser({
+    httpProxy: process.env.STEAM_PROXY_URL || undefined,
+});
+
 
 
 export var csgo = new GlobalOffensive(client);
